@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Response Diff Tool</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            .response-container {
+                max-height: 400px;
+                overflow-y: auto;
+                border: 1px solid #dee2e6;
+                padding: 15px;
+                background-color: #f8f9fa;
+                white-space: pre-wrap;
+                line-height: 1.6;
+            }
+            .diff-container {
+                max-height: 600px;
+                overflow-y: auto;
+                border: 1px solid #dee2e6;
+                padding: 15px;
+                background-color: #f8f9fa;
+            }
+            .custom-diff {
+                font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+                font-size: 14px;
+                line-height: 1.5;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            .diff-equal {
+                background-color: #ffffff;
+                padding: 8px 12px;
+                margin: 2px 0;
+                border-left: 4px solid #28a745;
+                border-radius: 4px;
+            }
+            .diff-delete {
+                background-color: #f8d7da;
+                padding: 8px 12px;
+                margin: 2px 0;
+                border-left: 4px solid #dc3545;
+                border-radius: 4px;
+            }
+            .diff-insert {
+                background-color: #d4edda;
+                padding: 8px 12px;
+                margin: 2px 0;
+                border-left: 4px solid #28a745;
+                border-radius: 4px;
+            }
+            .diff-changed {
+                background-color: #fff3cd;
+                padding: 8px 12px;
+                margin: 2px 0;
+                border-left: 4px solid #ffc107;
+                border-radius: 4px;
+            }
+            .diff-marker {
+                font-weight: bold;
+                margin-right: 8px;
+                display: inline-block;
+                width: 20px;
+            }
+            .diff-equal .diff-marker {
+                color: #28a745;
+            }
+            .diff-delete .diff-marker {
+                color: #dc3545;
+            }
+            .diff-insert .diff-marker {
+                color: #28a745;
+            }
+            .diff-changed .diff-marker {
+                color: #ffc107;
+            }
+            .line-content {
+                flex: 1;
+                white-space: pre-wrap;
+            }
+            .char-delete {
+                background-color: #ffc1cc;
+                text-decoration: line-through;
+            }
+            .char-insert {
+                background-color: #acf2bd;
+                font-weight: bold;
+            }
+            .diff-equal,
+            .diff-delete,
+            .diff-insert,
+            .diff-changed {
+                display: flex;
+                align-items: flex-start;
+            }
+            .loading {
+                display: none;
+            }
+            .spinner-border {
+                width: 1rem;
+                height: 1rem;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <h1 class="text-center mb-4">LLM Response Diff Tool</h1>
+
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <form id="compareForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="prompt1" class="form-label"
+                                        >Prompt 1</label
+                                    >
+                                    <textarea
+                                        class="form-control"
+                                        id="prompt1"
+                                        name="prompt1"
+                                        rows="4"
+                                        placeholder="Enter your first prompt here..."
+                                        required
+                                    ></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="prompt2" class="form-label"
+                                        >Prompt 2 (optional - same as Prompt 1
+                                        if empty)</label
+                                    >
+                                    <textarea
+                                        class="form-control"
+                                        id="prompt2"
+                                        name="prompt2"
+                                        rows="4"
+                                        placeholder="Enter your second prompt here..."
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model1" class="form-label"
+                                        >Model 1</label
+                                    >
+                                    <select
+                                        class="form-select"
+                                        id="model1"
+                                        name="model1"
+                                        required
+                                    >
+                                        <option value="gpt-3.5-turbo">
+                                            GPT-3.5 Turbo
+                                        </option>
+                                        <option value="gpt-4">GPT-4</option>
+                                        <option value="gpt-4-turbo-preview">
+                                            GPT-4 Turbo
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model2" class="form-label"
+                                        >Model 2 (optional - same as Model 1 if
+                                        empty)</label
+                                    >
+                                    <select
+                                        class="form-select"
+                                        id="model2"
+                                        name="model2"
+                                    >
+                                        <option value="">
+                                            Same as Model 1
+                                        </option>
+                                        <option value="gpt-3.5-turbo">
+                                            GPT-3.5 Turbo
+                                        </option>
+                                        <option value="gpt-4">GPT-4</option>
+                                        <option value="gpt-4-turbo-preview">
+                                            GPT-4 Turbo
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <button type="submit" class="btn btn-primary">
+                                <span
+                                    class="loading spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                ></span>
+                                Compare Responses
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="results" style="display: none">
+                <hr />
+                <h3>Results</h3>
+
+                <div
+                    id="summaryPanel"
+                    class="alert alert-info mb-4"
+                    style="display: none"
+                >
+                    <h5 class="alert-heading">AI Summary</h5>
+                    <p id="summaryText" class="mb-0"></p>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 id="model1Name"></h5>
+                        <div class="response-container" id="response1Container">
+                            <div id="response1"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 id="model2Name"></h5>
+                        <div class="response-container" id="response2Container">
+                            <div id="response2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5>Visual Diff</h5>
+                <div id="diffView" class="diff-container"></div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document
+                .getElementById("compareForm")
+                .addEventListener("submit", async function (e) {
+                    e.preventDefault();
+
+                    const submitBtn = e.target.querySelector(
+                        'button[type="submit"]',
+                    );
+                    const loading = submitBtn.querySelector(".loading");
+                    const results = document.getElementById("results");
+
+                    loading.style.display = "inline-block";
+                    submitBtn.disabled = true;
+                    results.style.display = "none";
+
+                    const formData = new FormData(e.target);
+
+                    try {
+                        const response = await fetch("/compare", {
+                            method: "POST",
+                            body: formData,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `HTTP error! status: ${response.status}`,
+                            );
+                        }
+
+                        const data = await response.json();
+
+                        document.getElementById("model1Name").textContent =
+                            `${data.model1} - Response`;
+                        document.getElementById("model2Name").textContent =
+                            `${data.model2} - Response`;
+                        // Safely render markdown with DOMPurify sanitization
+                        const response1Html = DOMPurify.sanitize(
+                            marked.parse(data.response1),
+                        );
+                        const response2Html = DOMPurify.sanitize(
+                            marked.parse(data.response2),
+                        );
+
+                        document.getElementById("response1").innerHTML =
+                            response1Html;
+                        document.getElementById("response2").innerHTML =
+                            response2Html;
+                        document.getElementById("diffView").innerHTML =
+                            data.diff_html;
+
+                        // Show AI summary
+                        document.getElementById("summaryText").textContent =
+                            data.summary;
+                        document.getElementById("summaryPanel").style.display =
+                            "block";
+
+                        results.style.display = "block";
+
+                        // Set up synchronized scrolling after results are displayed
+                        setupSynchronizedScrolling();
+                    } catch (error) {
+                        alert("Error: " + error.message);
+                    } finally {
+                        loading.style.display = "none";
+                        submitBtn.disabled = false;
+                    }
+                });
+
+            // Store references to current scroll handlers
+            let currentScrollHandlers = null;
+
+            function setupSynchronizedScrolling() {
+                const container1 =
+                    document.getElementById("response1Container");
+                const container2 =
+                    document.getElementById("response2Container");
+
+                if (!container1 || !container2) return;
+
+                // Remove existing event listeners if they exist
+                if (currentScrollHandlers) {
+                    container1.removeEventListener(
+                        "scroll",
+                        currentScrollHandlers.handler1,
+                    );
+                    container2.removeEventListener(
+                        "scroll",
+                        currentScrollHandlers.handler2,
+                    );
+                }
+
+                let isScrolling = false;
+
+                // Define the scroll handlers
+                const handler1 = function () {
+                    if (isScrolling) return;
+                    isScrolling = true;
+
+                    // Calculate scroll percentage
+                    const scrollPercentage =
+                        container1.scrollTop /
+                        (container1.scrollHeight - container1.clientHeight);
+
+                    // Apply to container2
+                    const targetScrollTop =
+                        scrollPercentage *
+                        (container2.scrollHeight - container2.clientHeight);
+                    container2.scrollTop = targetScrollTop;
+
+                    setTimeout(() => {
+                        isScrolling = false;
+                    }, 10);
+                };
+
+                const handler2 = function () {
+                    if (isScrolling) return;
+                    isScrolling = true;
+
+                    // Calculate scroll percentage
+                    const scrollPercentage =
+                        container2.scrollTop /
+                        (container2.scrollHeight - container2.clientHeight);
+
+                    // Apply to container1
+                    const targetScrollTop =
+                        scrollPercentage *
+                        (container1.scrollHeight - container1.clientHeight);
+                    container1.scrollTop = targetScrollTop;
+
+                    setTimeout(() => {
+                        isScrolling = false;
+                    }, 10);
+                };
+
+                // Add new event listeners
+                container1.addEventListener("scroll", handler1);
+                container2.addEventListener("scroll", handler2);
+
+                // Store references for future cleanup
+                currentScrollHandlers = { handler1, handler2 };
+            }
+        </script>
+    </body>
+</html>
