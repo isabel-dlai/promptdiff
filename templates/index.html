@@ -9,14 +9,67 @@
             rel="stylesheet"
         />
         <style>
-            .response-container {
-                max-height: 400px;
+            .unified-scroll-container {
+                max-height: 600px;
                 overflow-y: auto;
                 border: 1px solid #dee2e6;
-                padding: 15px;
                 background-color: #f8f9fa;
-                white-space: pre-wrap;
+                margin-bottom: 2rem;
+            }
+            .response-wrapper {
+                display: flex;
+                min-height: 100%;
+            }
+            .response-column {
+                flex: 1;
+                min-width: 0;
+                border-right: 1px solid #dee2e6;
+            }
+            .response-column:last-child {
+                border-right: none;
+            }
+            .sticky-header {
+                position: sticky;
+                top: 0;
+                background-color: #ffffff;
+                padding: 12px 15px;
+                margin: 0;
+                border-bottom: 2px solid #dee2e6;
+                z-index: 10;
+                font-weight: 600;
+            }
+            .response-content {
+                padding: 15px;
                 line-height: 1.6;
+            }
+            .response-content p {
+                margin-bottom: 0.75rem;
+                line-height: 1.5;
+            }
+            .response-content p:last-child {
+                margin-bottom: 0;
+            }
+            .response-content ul,
+            .response-content ol {
+                margin-bottom: 0.75rem;
+                padding-left: 1.5rem;
+            }
+            .response-content li {
+                margin-bottom: 0.25rem;
+            }
+            .response-content h1,
+            .response-content h2,
+            .response-content h3,
+            .response-content h4,
+            .response-content h5,
+            .response-content h6 {
+                margin-top: 1rem;
+                margin-bottom: 0.5rem;
+            }
+            .highlight-shared {
+                background-color: rgba(255, 235, 59, 0.3);
+                padding: 2px 4px;
+                border-radius: 3px;
             }
             .diff-container {
                 max-height: 600px;
@@ -160,13 +213,25 @@
                                         name="model1"
                                         required
                                     >
-                                        <option value="gpt-3.5-turbo">
-                                            GPT-3.5 Turbo
-                                        </option>
-                                        <option value="gpt-4">GPT-4</option>
-                                        <option value="gpt-4-turbo-preview">
-                                            GPT-4 Turbo
-                                        </option>
+                                        <optgroup label="OpenAI">
+                                            <option value="openai:gpt-4o">GPT-4o</option>
+                                            <option value="openai:gpt-4o-mini">GPT-4o Mini</option>
+                                            <option value="openai:gpt-4-turbo">GPT-4 Turbo</option>
+                                            <option value="openai:gpt-4">GPT-4</option>
+                                            <option value="openai:gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                        </optgroup>
+                                        <optgroup label="Anthropic">
+                                            <option value="anthropic:claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
+                                            <option value="anthropic:claude-opus-4-1-20250805">Claude Opus 4.1</option>
+                                            <option value="anthropic:claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                                            <option value="anthropic:claude-opus-4-20250514">Claude Opus 4</option>
+                                            <option value="anthropic:claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                                        </optgroup>
+                                        <optgroup label="Google (Not yet implemented)" disabled>
+                                            <option value="google:gemini-2.0-flash-exp" disabled>Gemini 2.0 Flash (Not yet implemented)</option>
+                                            <option value="google:gemini-1.5-pro" disabled>Gemini 1.5 Pro (Not yet implemented)</option>
+                                            <option value="google:gemini-1.5-flash" disabled>Gemini 1.5 Flash (Not yet implemented)</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                             </div>
@@ -181,16 +246,26 @@
                                         id="model2"
                                         name="model2"
                                     >
-                                        <option value="">
-                                            Same as Model 1
-                                        </option>
-                                        <option value="gpt-3.5-turbo">
-                                            GPT-3.5 Turbo
-                                        </option>
-                                        <option value="gpt-4">GPT-4</option>
-                                        <option value="gpt-4-turbo-preview">
-                                            GPT-4 Turbo
-                                        </option>
+                                        <option value="">Same as Model 1</option>
+                                        <optgroup label="OpenAI">
+                                            <option value="openai:gpt-4o">GPT-4o</option>
+                                            <option value="openai:gpt-4o-mini">GPT-4o Mini</option>
+                                            <option value="openai:gpt-4-turbo">GPT-4 Turbo</option>
+                                            <option value="openai:gpt-4">GPT-4</option>
+                                            <option value="openai:gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                        </optgroup>
+                                        <optgroup label="Anthropic">
+                                            <option value="anthropic:claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
+                                            <option value="anthropic:claude-opus-4-1-20250805">Claude Opus 4.1</option>
+                                            <option value="anthropic:claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                                            <option value="anthropic:claude-opus-4-20250514">Claude Opus 4</option>
+                                            <option value="anthropic:claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                                        </optgroup>
+                                        <optgroup label="Google (Not yet implemented)" disabled>
+                                            <option value="google:gemini-2.0-flash-exp" disabled>Gemini 2.0 Flash (Not yet implemented)</option>
+                                            <option value="google:gemini-1.5-pro" disabled>Gemini 1.5 Pro (Not yet implemented)</option>
+                                            <option value="google:gemini-1.5-flash" disabled>Gemini 1.5 Flash (Not yet implemented)</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                             </div>
@@ -214,6 +289,48 @@
                 <h3>Results</h3>
 
                 <div
+                    id="similarityPanel"
+                    class="card mb-4"
+                    style="display: none"
+                >
+                    <div class="card-body">
+                        <h5 class="card-title">Similarity Overview</h5>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">Similarity Score:</span>
+                                    <div class="progress flex-grow-1 me-2" style="height: 25px;">
+                                        <div id="similarityBar" class="progress-bar" role="progressbar" style="width: 0%">
+                                            <span id="similarityScore">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6 class="text-success">
+                                    <span class="badge bg-success">Shared Concepts</span>
+                                </h6>
+                                <ul id="sharedConcepts" class="list-unstyled small"></ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-primary">
+                                    <span class="badge bg-primary">Unique to Response 1</span>
+                                </h6>
+                                <ul id="uniqueToResponse1" class="list-unstyled small"></ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-warning">
+                                    <span class="badge bg-warning text-dark">Unique to Response 2</span>
+                                </h6>
+                                <ul id="uniqueToResponse2" class="list-unstyled small"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
                     id="summaryPanel"
                     class="alert alert-info mb-4"
                     style="display: none"
@@ -222,17 +339,15 @@
                     <p id="summaryText" class="mb-0"></p>
                 </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5 id="model1Name"></h5>
-                        <div class="response-container" id="response1Container">
-                            <div id="response1"></div>
+                <div class="unified-scroll-container">
+                    <div class="response-wrapper">
+                        <div class="response-column">
+                            <h5 id="model1Name" class="sticky-header"></h5>
+                            <div id="response1" class="response-content"></div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h5 id="model2Name"></h5>
-                        <div class="response-container" id="response2Container">
-                            <div id="response2"></div>
+                        <div class="response-column">
+                            <h5 id="model2Name" class="sticky-header"></h5>
+                            <div id="response2" class="response-content"></div>
                         </div>
                     </div>
                 </div>
@@ -279,13 +394,38 @@
                             `${data.model1} - Response`;
                         document.getElementById("model2Name").textContent =
                             `${data.model2} - Response`;
+
                         // Safely render markdown with DOMPurify sanitization
-                        const response1Html = DOMPurify.sanitize(
+                        let response1Html = DOMPurify.sanitize(
                             marked.parse(data.response1),
                         );
-                        const response2Html = DOMPurify.sanitize(
+                        let response2Html = DOMPurify.sanitize(
                             marked.parse(data.response2),
                         );
+
+                        // Apply highlighting for shared concepts
+                        if (
+                            data.similarity_data &&
+                            data.similarity_data.shared_concepts
+                        ) {
+                            data.similarity_data.shared_concepts.forEach(
+                                (concept) => {
+                                    // Case-insensitive highlighting
+                                    const regex = new RegExp(
+                                        `(${concept.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+                                        "gi",
+                                    );
+                                    response1Html = response1Html.replace(
+                                        regex,
+                                        '<mark class="highlight-shared">$1</mark>',
+                                    );
+                                    response2Html = response2Html.replace(
+                                        regex,
+                                        '<mark class="highlight-shared">$1</mark>',
+                                    );
+                                },
+                            );
+                        }
 
                         document.getElementById("response1").innerHTML =
                             response1Html;
@@ -294,6 +434,73 @@
                         document.getElementById("diffView").innerHTML =
                             data.diff_html;
 
+                        // Show similarity overview
+                        if (data.similarity_data) {
+                            const score = data.similarity_data.similarity_score;
+                            document.getElementById("similarityScore").textContent =
+                                score + "%";
+                            document.getElementById("similarityBar").style.width =
+                                score + "%";
+
+                            // Color code the progress bar
+                            const progressBar =
+                                document.getElementById("similarityBar");
+                            progressBar.classList.remove(
+                                "bg-danger",
+                                "bg-warning",
+                                "bg-success",
+                            );
+                            if (score < 40) {
+                                progressBar.classList.add("bg-danger");
+                            } else if (score < 70) {
+                                progressBar.classList.add("bg-warning");
+                            } else {
+                                progressBar.classList.add("bg-success");
+                            }
+
+                            // Populate shared concepts
+                            const sharedList =
+                                document.getElementById("sharedConcepts");
+                            sharedList.innerHTML = "";
+                            data.similarity_data.shared_concepts.forEach(
+                                (concept) => {
+                                    const li = document.createElement("li");
+                                    li.textContent = "• " + concept;
+                                    sharedList.appendChild(li);
+                                },
+                            );
+
+                            // Populate unique to response 1
+                            const unique1List = document.getElementById(
+                                "uniqueToResponse1",
+                            );
+                            unique1List.innerHTML = "";
+                            data.similarity_data.unique_to_response1.forEach(
+                                (concept) => {
+                                    const li = document.createElement("li");
+                                    li.textContent = "• " + concept;
+                                    unique1List.appendChild(li);
+                                },
+                            );
+
+                            // Populate unique to response 2
+                            const unique2List = document.getElementById(
+                                "uniqueToResponse2",
+                            );
+                            unique2List.innerHTML = "";
+                            data.similarity_data.unique_to_response2.forEach(
+                                (concept) => {
+                                    const li = document.createElement("li");
+                                    li.textContent = "• " + concept;
+                                    unique2List.appendChild(li);
+                                },
+                            );
+
+                            document.getElementById(
+                                "similarityPanel",
+                            ).style.display = "block";
+                        }
+
                         // Show AI summary
                         document.getElementById("summaryText").textContent =
                             data.summary;
@@ -301,9 +508,6 @@
                             "block";
 
                         results.style.display = "block";
-
-                        // Set up synchronized scrolling after results are displayed
-                        setupSynchronizedScrolling();
                     } catch (error) {
                         alert("Error: " + error.message);
                     } finally {
@@ -311,80 +515,6 @@
                         submitBtn.disabled = false;
                     }
                 });
-
-            // Store references to current scroll handlers
-            let currentScrollHandlers = null;
-
-            function setupSynchronizedScrolling() {
-                const container1 =
-                    document.getElementById("response1Container");
-                const container2 =
-                    document.getElementById("response2Container");
-
-                if (!container1 || !container2) return;
-
-                // Remove existing event listeners if they exist
-                if (currentScrollHandlers) {
-                    container1.removeEventListener(
-                        "scroll",
-                        currentScrollHandlers.handler1,
-                    );
-                    container2.removeEventListener(
-                        "scroll",
-                        currentScrollHandlers.handler2,
-                    );
-                }
-
-                let isScrolling = false;
-
-                // Define the scroll handlers
-                const handler1 = function () {
-                    if (isScrolling) return;
-                    isScrolling = true;
-
-                    // Calculate scroll percentage
-                    const scrollPercentage =
-                        container1.scrollTop /
-                        (container1.scrollHeight - container1.clientHeight);
-
-                    // Apply to container2
-                    const targetScrollTop =
-                        scrollPercentage *
-                        (container2.scrollHeight - container2.clientHeight);
-                    container2.scrollTop = targetScrollTop;
-
-                    setTimeout(() => {
-                        isScrolling = false;
-                    }, 10);
-                };
-
-                const handler2 = function () {
-                    if (isScrolling) return;
-                    isScrolling = true;
-
-                    // Calculate scroll percentage
-                    const scrollPercentage =
-                        container2.scrollTop /
-                        (container2.scrollHeight - container2.clientHeight);
-
-                    // Apply to container1
-                    const targetScrollTop =
-                        scrollPercentage *
-                        (container1.scrollHeight - container1.clientHeight);
-                    container1.scrollTop = targetScrollTop;
-
-                    setTimeout(() => {
-                        isScrolling = false;
-                    }, 10);
-                };
-
-                // Add new event listeners
-                container1.addEventListener("scroll", handler1);
-                container2.addEventListener("scroll", handler2);
-
-                // Store references for future cleanup
-                currentScrollHandlers = { handler1, handler2 };
-            }
         </script>
     </body>
 </html>

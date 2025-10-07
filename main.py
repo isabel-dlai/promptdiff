@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+import aisuite as ai
 import difflib
 import json
 from typing import Optional
@@ -28,28 +28,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class LLMProvider:
     def __init__(self):
-        self.client = None
-
-    def _get_client(self) -> AsyncOpenAI:
-        """Get or create a single OpenAI client with proper connection limits"""
-        if self.client is None:
-            self.client = AsyncOpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-                max_retries=2,
-                timeout=30.0
-            )
-        return self.client
+        self.client = ai.Client()
 
     async def get_response(self, prompt: str, model: str) -> str:
-        if model.startswith("gpt"):
-            return await self._openai_response(prompt, model)
-        else:
-            return f"Model {model} not implemented yet"
-
-    async def _openai_response(self, prompt: str, model: str) -> str:
         try:
-            client = self._get_client()
-            response = await client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=1000
@@ -57,12 +40,6 @@ class LLMProvider:
             return response.choices[0].message.content
         except Exception as e:
             return f"Error: {str(e)}"
-
-    async def close(self):
-        """Close the client connection"""
-        if self.client:
-            await self.client.close()
-            self.client = None
 
 llm_provider = LLMProvider()
 
@@ -78,7 +55,7 @@ async def compare_responses(
     model2: Optional[str] = Form(None)
 ):
     try:
-        if model2 is None:
+        if model2 is None or model2.strip() == "":
             model2 = model1
 
         if prompt2 is None or prompt2.strip() == "":
@@ -99,11 +76,32 @@ async def compare_responses(
         if isinstance(response2, Exception):
             response2 = f"Error generating response 2: {str(response2)}"
 
-        # Generate AI summary of differences
+        # Generate AI summary and similarity analysis in parallel
         try:
-            summary = await generate_difference_summary(response1, response2, prompt1, prompt2)
+            summary, similarity_data = await asyncio.gather(
+                generate_difference_summary(response1, response2, prompt1, prompt2),
+                generate_similarity_analysis(response1, response2),
+                return_exceptions=True
+            )
+
+            # Handle potential exceptions from gather
+            if isinstance(summary, Exception):
+                summary = "Summary generation failed"
+            if isinstance(similarity_data, Exception):
+                similarity_data = {
+                    "similarity_score": 0,
+                    "shared_concepts": [],
+                    "unique_to_response1": [],
+                    "unique_to_response2": []
+                }
         except Exception as e:
             summary = "Summary generation failed"
+            similarity_data = {
+                "similarity_score": 0,
+                "shared_concepts": [],
+                "unique_to_response1": [],
+                "unique_to_response2": []
+            }
 
         diff_html = generate_diff_html(response1, response2)
 
@@ -115,11 +113,10 @@ async def compare_responses(
             "response1": response1,
             "response2": response2,
             "summary": summary,
+            "similarity_data": similarity_data,
             "diff_html": diff_html
         }
     except Exception as e:
-        # Reset the client on error to ensure clean state
-        await llm_provider.close()
         raise e
 
 async def generate_difference_summary(response1: str, response2: str, prompt1: str, prompt2: str) -> str:
@@ -130,9 +127,8 @@ async def generate_difference_summary(response1: str, response2: str, prompt1: s
     analysis_prompt = prompt_template.format(response1=response1, response2=response2)
 
     try:
-        client = llm_provider._get_client()
-        response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Use faster model for analysis
+        response = llm_provider.client.chat.completions.create(
+            model="openai:gpt-3.5-turbo",  # Use faster model for analysis
             messages=[{"role": "user", "content": analysis_prompt}],
             max_tokens=100,  # Keep it brief
             temperature=0.3  # Lower temperature for consistent analysis
@@ -140,6 +136,41 @@ async def generate_difference_summary(response1: str, response2: str, prompt1: s
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"Summary unavailable: {str(e)}"
+
+async def generate_similarity_analysis(response1: str, response2: str) -> dict:
+    """Generate semantic similarity analysis with shared concepts and unique points"""
+
+    # Load prompt template and format with responses
+    prompt_template = load_prompt("similarity_analysis.md")
+    analysis_prompt = prompt_template.format(response1=response1, response2=response2)
+
+    try:
+        response = llm_provider.client.chat.completions.create(
+            model="openai:gpt-4o-mini",  # Use capable but fast model for JSON parsing
+            messages=[{"role": "user", "content": analysis_prompt}],
+            max_tokens=500,
+            temperature=0.2  # Low temperature for consistent JSON output
+        )
+
+        # Parse JSON response
+        result_text = response.choices[0].message.content.strip()
+        similarity_data = json.loads(result_text)
+
+        return similarity_data
+    except json.JSONDecodeError as e:
+        return {
+            "similarity_score": 0,
+            "shared_concepts": [],
+            "unique_to_response1": [],
+            "unique_to_response2": []
+        }
+    except Exception as e:
+        return {
+            "similarity_score": 0,
+            "shared_concepts": [],
+            "unique_to_response1": [],
+            "unique_to_response2": []
+        }
 
 def generate_diff_html(text1: str, text2: str) -> str:
     import re
