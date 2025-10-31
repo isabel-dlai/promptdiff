@@ -154,10 +154,14 @@ async def generate_similarity_analysis(response1: str, response2: str) -> dict:
 
         # Parse JSON response
         result_text = response.choices[0].message.content.strip()
+        print(f"Similarity API raw response: {result_text}")
         similarity_data = json.loads(result_text)
+        print(f"Parsed similarity data: {similarity_data}")
 
         return similarity_data
     except json.JSONDecodeError as e:
+        print(f"JSON decode error in similarity analysis: {e}")
+        print(f"Response text was: {result_text if 'result_text' in locals() else 'N/A'}")
         return {
             "similarity_score": 0,
             "shared_concepts": [],
@@ -165,6 +169,7 @@ async def generate_similarity_analysis(response1: str, response2: str) -> dict:
             "unique_to_response2": []
         }
     except Exception as e:
+        print(f"Error in similarity analysis: {type(e).__name__}: {e}")
         return {
             "similarity_score": 0,
             "shared_concepts": [],
